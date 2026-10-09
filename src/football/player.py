@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from random import choice, gauss
+from random import gauss
 from typing import ClassVar
 
 from .faker import fakers
 from .nationality import Nationality
 from .position import Position
-from .utils import require_condition, require_type_and_not_none
+from .utils import require_condition, require_type, value_or_default
 
 
 class Player:
@@ -15,28 +15,31 @@ class Player:
     MEAN_AGE: ClassVar[float] = 26.5
     AGE_STD_DEV: ClassVar[float] = 4.5
 
-    def __init__(self, nationality: Nationality, age: int, position: Position) -> None:
-        self.nationality = require_type_and_not_none(
-            nationality,
+    def __init__(
+        self,
+        nationality: Nationality | None = None,
+        age: int | None = None,
+        position: Position | None = None,
+    ) -> None:
+        self.nationality = self.nationality = require_type(
+            value_or_default(nationality, Nationality.random),
             Nationality,
             "Player nationality must be of type Nationality",
-            "Player nationality cannot be None",
         )
         self.age = require_condition(
-            require_type_and_not_none(
-                age,
+            require_type(
+                value_or_default(age, type(self)._generate_age),
                 int,
                 "Player age must be of type int",
-                "Player age cannot be None",
             ),
             lambda age: self.MIN_AGE <= age <= self.MAX_AGE,
             f"Player age must be between {self.MIN_AGE} and {self.MAX_AGE}",
         )
-        self.position = require_type_and_not_none(
-            position,
+
+        self.position = require_type(
+            value_or_default(position, Position.random),
             Position,
             "Player position must be of type Position",
-            "Player position cannot be None",
         )
 
         self.faker = fakers[self.nationality]
@@ -49,13 +52,6 @@ class Player:
             age = round(gauss(cls.MEAN_AGE, cls.AGE_STD_DEV))
             if cls.MIN_AGE <= age <= cls.MAX_AGE:
                 return age
-
-    @classmethod
-    def random(cls) -> Player:
-        nationality = choice(list(Nationality))
-        age = cls._generate_age()
-        position = choice(list(Position))
-        return cls(nationality, age, position)
 
     @property
     def name(self) -> str:

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from enum import Enum
+from random import choice
 
 
 class PositionGroup(Enum):
@@ -32,3 +35,7 @@ class Position(Enum):
     def __init__(self, abbreviation: str, group: PositionGroup):
         self.abbreviation = abbreviation
         self.group = group
+
+    @classmethod
+    def random(cls) -> Position:
+        return choice(list(cls))

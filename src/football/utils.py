@@ -15,7 +15,9 @@ def require_type[T](
     required_type: type[T],
     reason: str = "Unexpected type",
 ) -> T:
-    if not isinstance(value, required_type):
+    if not isinstance(value, required_type) or (
+        required_type is int and isinstance(value, bool)
+    ):
         raise TypeError(
             f"{reason}: expected {required_type.__name__}, got {type(value).__name__}"
         )
@@ -43,3 +45,10 @@ def require_condition[T](
         raise ValueError(reason)
 
     return value
+
+
+def value_or_default[T](
+    value: T | None,
+    default_factory: Callable[[], T],
+) -> T:
+    return value if value is not None else default_factory()

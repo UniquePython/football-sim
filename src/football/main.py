@@ -8,7 +8,7 @@ from .position import Position
 def main() -> None:
     # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
     p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER)
-    p2 = Player.random()
+    p2 = Player()
 
     print(p1)
     print(p2)
@@ -17,7 +17,7 @@ def main() -> None:
     print(repr(p2))
 
     # ========== CHECK AGE DISTRIBUTION ==========
-    # ages = [Player.random().age for _ in range(10_000)]
+    # ages = [Player().age for _ in range(10_000)]
     # plt.hist(
     #     ages,
     #     bins=range(15, 44),
