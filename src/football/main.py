@@ -1,9 +1,12 @@
 from .nationality import Nationality
+
+# import matplotlib.pyplot as plt
 from .player import Player
 
 
 def main() -> None:
-    p1 = Player(Nationality.UK)
+    # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
+    p1 = Player(Nationality.UK, 16)
     p2 = Player.random()
 
     print(p1)
@@ -11,6 +14,20 @@ def main() -> None:
 
     print(repr(p1))
     print(repr(p2))
+
+    # ========== CHECK AGE DISTRIBUTION ==========
+    # ages = [Player.random().age for _ in range(10_000)]
+    # plt.hist(
+    #     ages,
+    #     bins=range(15, 44),
+    #     edgecolor="black",
+    # )
+    # plt.xlabel("Player age")
+    # plt.ylabel("Number of players")
+    # plt.title("Distribution of Football Player Ages")
+    # plt.xticks(range(16, 43))
+    # plt.tight_layout()
+    # plt.show()
 
 
 if __name__ == "__main__":

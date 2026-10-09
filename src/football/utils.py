@@ -1,3 +1,6 @@
+from collections.abc import Callable
+
+
 def require_not_none[T](
     value: T | None,
     reason: str = "Unexpected None",
@@ -29,3 +32,14 @@ def require_type_and_not_none[T](
     return require_type(
         require_not_none(value, none_reason), required_type, type_reason
     )
+
+
+def require_condition[T](
+    value: T,
+    condition: Callable[[T], bool],
+    reason: str = "Constraint violated",
+) -> T:
+    if not condition(value):
+        raise ValueError(reason)
+
+    return value
