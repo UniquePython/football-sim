@@ -2,11 +2,12 @@ from .nationality import Nationality
 
 # import matplotlib.pyplot as plt
 from .player import Player
+from .position import Position
 
 
 def main() -> None:
     # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
-    p1 = Player(Nationality.UK, 16)
+    p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER)
     p2 = Player.random()
 
     print(p1)

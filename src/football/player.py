@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from .faker import fakers
 from .nationality import Nationality
+from .position import Position
 from .utils import require_condition, require_type_and_not_none
 
 
@@ -14,7 +15,7 @@ class Player:
     MEAN_AGE: ClassVar[float] = 26.5
     AGE_STD_DEV: ClassVar[float] = 4.5
 
-    def __init__(self, nationality: Nationality, age: int) -> None:
+    def __init__(self, nationality: Nationality, age: int, position: Position) -> None:
         self.nationality = require_type_and_not_none(
             nationality,
             Nationality,
@@ -30,6 +31,12 @@ class Player:
             ),
             lambda age: self.MIN_AGE <= age <= self.MAX_AGE,
             f"Player age must be between {self.MIN_AGE} and {self.MAX_AGE}",
+        )
+        self.position = require_type_and_not_none(
+            position,
+            Position,
+            "Player position must be of type Position",
+            "Player position cannot be None",
         )
 
         self.faker = fakers[self.nationality]
@@ -47,14 +54,21 @@ class Player:
     def random(cls) -> Player:
         nationality = choice(list(Nationality))
         age = cls._generate_age()
-        return cls(nationality, age)
+        position = choice(list(Position))
+        return cls(nationality, age, position)
 
     @property
     def name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
     def __repr__(self) -> str:
-        return f"Player(nationality={self.nationality}, first_name={self.first_name!r}, last_name={self.last_name!r}, age={self.age})"
+        return f"Player(nationality={self.nationality}, first_name={self.first_name!r}, last_name={self.last_name!r}, age={self.age}, position={self.position})"
 
     def __str__(self) -> str:
-        return f"Player {self.name} from {self.nationality.display_name} is {self.age} years old"
+        return (
+            "Player:\n"
+            + f"\tName: {self.name}\n"
+            + f"\tCountry: {self.nationality.display_name}\n"
+            + f"\tAge: {self.age}\n"
+            + f"\tPosition: {self.position.abbreviation} ({self.position.group.value})\n"
+        )
