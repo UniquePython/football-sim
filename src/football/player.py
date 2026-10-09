@@ -4,12 +4,12 @@ from random import choice
 
 from .faker import fakers
 from .nationality import Nationality
-from .utils import require_type
+from .utils import require_type_and_not_none
 
 
 class Player:
     def __init__(self, nationality: Nationality) -> None:
-        self.nationality = require_type(nationality, Nationality)
+        self.nationality = require_type_and_not_none(nationality, Nationality)
         self.faker = fakers[self.nationality]
         self.first_name = self.faker.first_name_male()
         self.last_name = self.faker.last_name_male()
