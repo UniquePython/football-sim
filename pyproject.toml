@@ -4,10 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "Ananyo Bhattacharya", email = "169988112+UniquePython@users.noreply.github.com" }
+    { name = "Ananyo Bhattacharya", email = "169988112+UniquePython@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["faker>=40.41.0"]
 
 [project.scripts]
 football = "football:main"
@@ -15,3 +15,8 @@ football = "football:main"
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.10",
+]
