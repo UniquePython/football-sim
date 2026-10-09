@@ -10,13 +10,11 @@ requires-python = ">=3.13"
 dependencies = ["faker>=40.41.0"]
 
 [project.scripts]
-football = "football:main"
+football = "football.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "ruff>=0.16.10",
-]
+dev = ["ruff>=0.16.10"]
