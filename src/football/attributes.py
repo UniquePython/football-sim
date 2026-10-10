@@ -6,7 +6,7 @@ from .utils import require_condition, require_type_and_not_none
 
 class BaseAttributes:
     MIN: ClassVar[int] = 1
-    MAX: ClassVar[int] = 100
+    MAX: ClassVar[int] = 99
 
     def __post_init__(self) -> None:
         for field in fields(self):
