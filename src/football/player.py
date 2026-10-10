@@ -5,7 +5,13 @@ from typing import ClassVar
 
 from .attributes import Attributes, BaseAttributes
 from .faker import fakers
-from .generation import TIERS, generate_attributes, generate_base_quality
+from .foot import MAX_WEAK_FOOT, MIN_WEAK_FOOT, Foot
+from .generation import (
+    TIERS,
+    generate_attributes,
+    generate_base_quality,
+    generate_weak_foot,
+)
 from .nationality import Nationality
 from .position import Position
 from .ratings import overall_rating
@@ -27,6 +33,8 @@ class Player:
         position: Position | None = None,
         overall: int | None = None,
         attributes: Attributes | None = None,
+        foot: Foot | None = None,
+        weak_foot: int | None = None,
     ) -> None:
         self.nationality = require_type(
             value_or_default(nationality, Nationality.random),
@@ -43,11 +51,20 @@ class Player:
             f"Player age must be between {self.MIN_AGE} and {self.MAX_AGE}",
         )
 
+        if foot is not None:
+            require_type(foot, Foot, "Player foot must be of type Foot")
+
         self.position = require_type(
-            value_or_default(position, Position.random),
+            value_or_default(
+                position,
+                lambda: (
+                    foot.random_position() if foot is not None else Position.random()
+                ),
+            ),
             Position,
             "Player position must be of type Position",
         )
+        self._foot = value_or_default(foot, lambda: Foot.random_for(self.position))
 
         if overall is not None and attributes is not None:
             raise ValueError(
@@ -71,6 +88,10 @@ class Player:
             )
             self.attributes = generate_attributes(self.position, target)
 
+        self.weak_foot = value_or_default(
+            weak_foot, lambda: generate_weak_foot(self.overall)
+        )
+
         self.faker = fakers[self.nationality]
         self.first_name = self.faker.first_name_male()
         self.last_name = self.faker.last_name_male()
@@ -87,6 +108,22 @@ class Player:
         return round(overall_rating(self.attributes, self.position))
 
     @property
+    def foot(self) -> Foot:
+        return self._foot
+
+    @property
+    def weak_foot(self) -> int:
+        return self._weak_foot
+
+    @weak_foot.setter
+    def weak_foot(self, value: int) -> None:
+        self._weak_foot = require_condition(
+            require_type(value, int, "Player weak foot must be of type int"),
+            lambda value: MIN_WEAK_FOOT <= value <= MAX_WEAK_FOOT,
+            f"Player weak foot must be between {MIN_WEAK_FOOT} and {MAX_WEAK_FOOT}",
+        )
+
+    @property
     def name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
@@ -100,6 +137,9 @@ class Player:
             + f"\tCountry: {self.nationality.display_name}\n"
             + f"\tAge: {self.age}\n"
             + f"\tPosition: {self.position.abbreviation} ({self.position.group.value})\n"
+            + f"\tFoot: {self.foot.value} (weak foot: "
+            + "★" * self.weak_foot
+            + ")\n"
             + f"\tOverall: {self.overall}\n"
             + "\tAttributes:\n\t\t"
             + "\t\t".join(line + "\n" for line in str(self.attributes).split("\n"))

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+from .foot import Foot
 from .generation import TIERS, generate_attributes, generate_base_quality
 from .nationality import Nationality
 from .player import Player
@@ -46,14 +47,16 @@ def check_generated_player_attributes() -> None:
 
 def main() -> None:
     # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
-    p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER, 69)
+    p1 = Player(
+        Nationality.UK, 16, Position.ATTACKING_MIDFIELDER, 69, None, Foot.LEFT, 2
+    )
     p2 = Player()
 
     print(p1)
     print(p2)
 
-    print(repr(p1))
-    print(repr(p2))
+    # print(repr(p1))
+    # print(repr(p2))
 
     # ========== CHECK AGE DISTRIBUTION ==========
     # ages = [Player().age for _ in range(10_000)]
