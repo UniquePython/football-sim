@@ -86,7 +86,7 @@ TIERS = (
 WEIGHTS = [tier.weight for tier in TIERS]
 
 
-def generate_base_quality() -> int:
+def generate_potential() -> int:
     tier = random.choices(TIERS, WEIGHTS)[0]
     mode = tier.low + TIER_PEAK_FRACTION * (tier.high - tier.low)
     return round(random.triangular(tier.low - 0.5, tier.high + 0.5, mode))

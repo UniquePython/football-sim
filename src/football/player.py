@@ -4,12 +4,18 @@ from random import gauss
 from typing import ClassVar
 
 from .attributes import Attributes, BaseAttributes
+from .development import (
+    OFFSET_LIMIT,
+    generate_development_offset,
+    overall_from_potential,
+    potential_from_overall,
+)
 from .faker import fakers
 from .foot import MAX_WEAK_FOOT, MIN_WEAK_FOOT, Foot
 from .generation import (
     TIERS,
     generate_attributes,
-    generate_base_quality,
+    generate_potential,
     generate_weak_foot,
 )
 from .nationality import Nationality
@@ -35,6 +41,8 @@ class Player:
         attributes: Attributes | None = None,
         foot: Foot | None = None,
         weak_foot: int | None = None,
+        potential: int | None = None,
+        development_offset: float | None = None,
     ) -> None:
         self.nationality = require_type(
             value_or_default(nationality, Nationality.random),
@@ -66,27 +74,42 @@ class Player:
         )
         self._foot = value_or_default(foot, lambda: Foot.random_for(self.position))
 
-        if overall is not None and attributes is not None:
+        if sum(arg is not None for arg in (overall, attributes, potential)) > 1:
             raise ValueError(
-                "Pass either overall or attributes, not both: "
-                "explicit attributes already determine the overall"
+                "Pass at most one of overall, attributes or potential: "
+                "each one already determines the others"
             )
+
+        self._development_offset = require_condition(
+            require_type(
+                value_or_default(development_offset, generate_development_offset),
+                float,
+                "Player development offset must be of type float",
+            ),
+            lambda offset: -OFFSET_LIMIT <= offset <= OFFSET_LIMIT,
+            f"Player development offset must be between {-OFFSET_LIMIT} and {OFFSET_LIMIT}",
+        )
 
         if attributes is not None:
             self.attributes = require_type(
                 attributes, Attributes, "Player attributes must be of type Attributes"
             )
-        else:
-            target = require_condition(
-                require_type(
-                    value_or_default(overall, generate_base_quality),
-                    int,
-                    "Player overall must be of type int",
-                ),
-                lambda overall: self.MIN_OVERALL <= overall <= self.MAX_OVERALL,
-                f"Player overall must be between {self.MIN_OVERALL} and {self.MAX_OVERALL}",
+            self._potential = self._potential_from_current_overall()
+        elif overall is not None:
+            self.attributes = generate_attributes(
+                self.position, self._require_rating(overall, "overall")
             )
-            self.attributes = generate_attributes(self.position, target)
+            self._potential = self._potential_from_current_overall()
+        else:
+            self._potential = self._require_rating(
+                value_or_default(potential, generate_potential), "potential"
+            )
+            self.attributes = generate_attributes(
+                self.position,
+                overall_from_potential(
+                    self.age, self._potential, self._development_offset
+                ),
+            )
 
         self.weak_foot = value_or_default(
             weak_foot, lambda: generate_weak_foot(self.overall)
@@ -95,6 +118,17 @@ class Player:
         self.faker = fakers[self.nationality]
         self.first_name = self.faker.first_name_male()
         self.last_name = self.faker.last_name_male()
+
+    @classmethod
+    def _require_rating(cls, value: object, name: str) -> int:
+        return require_condition(
+            require_type(value, int, f"Player {name} must be of type int"),
+            lambda rating: cls.MIN_OVERALL <= rating <= cls.MAX_OVERALL,
+            f"Player {name} must be between {cls.MIN_OVERALL} and {cls.MAX_OVERALL}",
+        )
+
+    def _potential_from_current_overall(self) -> int:
+        return potential_from_overall(self.age, self.overall, self._development_offset)
 
     @classmethod
     def _generate_age(cls) -> int:
@@ -106,6 +140,14 @@ class Player:
     @property
     def overall(self) -> int:
         return round(overall_rating(self.attributes, self.position))
+
+    @property
+    def potential(self) -> int:
+        return self._potential
+
+    @property
+    def development_offset(self) -> float:
+        return self._development_offset
 
     @property
     def foot(self) -> Foot:
@@ -128,7 +170,7 @@ class Player:
         return f"{self.first_name} {self.last_name}"
 
     def __repr__(self) -> str:
-        return f"Player(nationality={self.nationality}, first_name={self.first_name!r}, last_name={self.last_name!r}, age={self.age}, position={self.position}, overall={self.overall}, attributes={self.attributes})"
+        return f"Player(nationality={self.nationality}, first_name={self.first_name!r}, last_name={self.last_name!r}, age={self.age}, position={self.position}, overall={self.overall}, potential={self.potential}, development_offset={self.development_offset:.2f}, attributes={self.attributes})"
 
     def __str__(self) -> str:
         return (
@@ -140,7 +182,7 @@ class Player:
             + f"\tFoot: {self.foot.value} (weak foot: "
             + "★" * self.weak_foot
             + ")\n"
-            + f"\tOverall: {self.overall}\n"
+            + f"\tOverall: {self.overall} (potential: {self.potential})\n"
             + "\tAttributes:\n\t\t"
             + "\t\t".join(line + "\n" for line in str(self.attributes).split("\n"))
         )
