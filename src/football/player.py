@@ -21,7 +21,7 @@ class Player:
         age: int | None = None,
         position: Position | None = None,
     ) -> None:
-        self.nationality = self.nationality = require_type(
+        self.nationality = require_type(
             value_or_default(nationality, Nationality.random),
             Nationality,
             "Player nationality must be of type Nationality",
