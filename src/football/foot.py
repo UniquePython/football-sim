@@ -5,6 +5,9 @@ from random import choices, random
 
 from .position import Position
 
+MIN_WEAK_FOOT = 1
+MAX_WEAK_FOOT = 5
+
 
 class Foot(Enum):
     LEFT = "Left"

@@ -4,6 +4,7 @@ from enum import StrEnum
 from math import sqrt
 
 from .attributes import Attributes, BaseAttributes, GoalKeepingAttributes
+from .foot import MAX_WEAK_FOOT, MIN_WEAK_FOOT
 from .position import Position, PositionGroup
 from .ratings import PROFILES
 from .utils import require_condition, require_type, require_type_and_not_none
@@ -69,6 +70,10 @@ OUTFIELD_GK_FRACTION = 0.2
 OUTFIELD_GK_FLOOR = 10
 OUTFIELD_GK_NOISE_SCALE = 0.2
 
+WEAK_FOOT_MEAN_AT_MIN = 2.5
+WEAK_FOOT_MEAN_AT_MAX = 3.5
+WEAK_FOOT_SIGMA = 0.8
+
 TIERS = (
     QualityTier(QualityTierName.BAD, 40, 49, 35.0),
     QualityTier(QualityTierName.AVERAGE, 50, 59, 40.0),
@@ -85,6 +90,20 @@ def generate_base_quality() -> int:
     tier = random.choices(TIERS, WEIGHTS)[0]
     mode = tier.low + TIER_PEAK_FRACTION * (tier.high - tier.low)
     return round(random.triangular(tier.low - 0.5, tier.high + 0.5, mode))
+
+
+def generate_weak_foot(overall: int) -> int:
+    low = min(tier.low for tier in TIERS)
+    high = BaseAttributes.MAX
+    progress = min(1.0, max(0.0, (overall - low) / (high - low)))
+
+    mean = WEAK_FOOT_MEAN_AT_MIN + progress * (
+        WEAK_FOOT_MEAN_AT_MAX - WEAK_FOOT_MEAN_AT_MIN
+    )
+
+    return min(
+        MAX_WEAK_FOOT, max(MIN_WEAK_FOOT, round(random.gauss(mean, WEAK_FOOT_SIGMA)))
+    )
 
 
 @dataclass(slots=True)
