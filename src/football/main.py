@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 
 from .generation import TIERS, generate_attributes, generate_base_quality
+from .nationality import Nationality
+from .player import Player
 from .position import Position
 from .ratings import overall_rating
 
@@ -44,14 +46,14 @@ def check_generated_player_attributes() -> None:
 
 def main() -> None:
     # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
-    # p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER)
-    # p2 = Player()
+    p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER, 69)
+    p2 = Player()
 
-    # print(p1)
-    # print(p2)
+    print(p1)
+    print(p2)
 
-    # print(repr(p1))
-    # print(repr(p2))
+    print(repr(p1))
+    print(repr(p2))
 
     # ========== CHECK AGE DISTRIBUTION ==========
     # ages = [Player().age for _ in range(10_000)]
@@ -69,7 +71,7 @@ def main() -> None:
 
     # check_base_quality_distribution()
 
-    check_generated_player_attributes()
+    # check_generated_player_attributes()
 
 
 if __name__ == "__main__":
