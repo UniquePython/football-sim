@@ -78,7 +78,7 @@ TIERS = (
     QualityTier(QualityTierName.ELITE, 90, 99, 0.2),
 )
 
-WEIGHTS = weights = [tier.weight for tier in TIERS]
+WEIGHTS = [tier.weight for tier in TIERS]
 
 
 def generate_base_quality() -> int:
