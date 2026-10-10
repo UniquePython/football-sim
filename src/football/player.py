@@ -22,6 +22,7 @@ from .nationality import Nationality
 from .position import Position
 from .ratings import overall_rating
 from .utils import require_condition, require_type, value_or_default
+from .value import market_value, round_value
 
 
 class Player:
@@ -142,6 +143,10 @@ class Player:
         return round(overall_rating(self.attributes, self.position))
 
     @property
+    def value(self) -> int:
+        return round_value(market_value(self.overall, self.potential, self.age))
+
+    @property
     def potential(self) -> int:
         return self._potential
 
@@ -183,6 +188,7 @@ class Player:
             + "★" * self.weak_foot
             + ")\n"
             + f"\tOverall: {self.overall} (potential: {self.potential})\n"
+            + f"\tValue: €{self.value:,}\n"
             + "\tAttributes:\n\t\t"
             + "\t\t".join(line + "\n" for line in str(self.attributes).split("\n"))
         )

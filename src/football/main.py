@@ -8,6 +8,7 @@ from .nationality import Nationality
 from .player import Player
 from .position import Position
 from .ratings import overall_rating
+from .value import VALUE_ANCHORS, base_value
 
 # ========== DEMO ==========
 
@@ -119,11 +120,75 @@ def check_generated_player_attributes() -> None:
             print(attributes)
 
 
+def check_base_value_curve() -> None:
+    import matplotlib.pyplot as plt
+
+    ratings = list(range(Player.MIN_OVERALL, Player.MAX_OVERALL + 1))
+    values = [base_value(rating) for rating in ratings]
+
+    for rating, value in zip(ratings, values):
+        print(f"{rating:>3}  €{value:>9,.0f}")
+
+    plt.semilogy(ratings, values, label="Base value")
+    plt.scatter(*zip(*VALUE_ANCHORS), color="red", zorder=3, label="Anchors")
+    plt.xlabel("Rating")
+    plt.ylabel("Value (log scale)")
+    plt.title("Base value by rating")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+CALIBRATION_RANGES: dict[int, tuple[int, int] | None] = {
+    40: (5_000, 50_000),
+    50: (30_000, 200_000),
+    60: (150_000, 800_000),
+    70: (1_000_000, 3_000_000),
+    80: None,
+    90: None,
+}
+
+
+def check_value_calibration(n: int = 200_000) -> None:
+    players = [Player() for _ in range(n)]
+
+    print(
+        f"{'rating':>6}  {'players':>7}  {'p10':>11}  {'median':>11}  {'p90':>11}"
+        f"  {'target range':<26}  fit"
+    )
+    for rating, target in CALIBRATION_RANGES.items():
+        values = sorted(p.value for p in players if abs(p.overall - rating) <= 1)
+        if len(values) < 20:
+            print(f"{rating:>6}  {len(values):>7}  too few players")
+            continue
+
+        p10, median, p90 = (values[int(q * (len(values) - 1))] for q in (0.1, 0.5, 0.9))
+
+        if target is None:
+            target_text, fit = "none", "-"
+        else:
+            low, high = target
+            target_text = f"€{low:,} to €{high:,}"
+            notes = []
+            if p10 < low:
+                notes.append("p10 below range")
+            if p90 > high:
+                notes.append("p90 above range")
+            fit = ", ".join(notes) or "inside"
+
+        print(
+            f"{rating:>6}  {len(values):>7,}  {p10:>11,}  {median:>11,}  {p90:>11,}"
+            f"  {target_text:<26}  {fit}"
+        )
+
+
 CHECKS: dict[str, Callable[[], None]] = {
     "age": check_age_distribution,
     "base-quality": check_base_quality_distribution,
     "development": check_development_by_age,
     "attributes": check_generated_player_attributes,
+    "value-curve": check_base_value_curve,
+    "value-calibration": check_value_calibration,
 }
 
 
