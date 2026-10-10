@@ -1,7 +1,7 @@
 [project]
 name = "football"
 version = "0.1.0"
-description = "Add your description here"
+description = "A hobby project trying to simulate realistic football mechanics, including but not limited to: matches, transfers, injuries, etc."
 readme = "README.md"
 authors = [
     { name = "Ananyo Bhattacharya", email = "169988112+UniquePython@users.noreply.github.com" },
@@ -17,7 +17,4 @@ requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "matplotlib>=3.11.2",
-    "ruff>=0.16.10",
-]
+dev = ["matplotlib>=3.11.2", "ruff>=0.16.10"]
