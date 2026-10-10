@@ -24,6 +24,12 @@ class BaseAttributes:
                 f"Attribute {name} must be between {self.MIN} and {self.MAX}",
             )
 
+    def __str__(self) -> str:
+        return " | ".join(
+            f"{field.name.replace('_', ' ').title()} {getattr(self, field.name):02d}"
+            for field in fields(self)
+        )
+
 
 @dataclass(slots=True)
 class DribblingAttributes(BaseAttributes):
@@ -111,3 +117,14 @@ class Attributes:
                 f"Attribute {name} must be of type {expected_type.__name__}",
                 f"Attribute {name} must not be None",
             )
+
+    def __str__(self) -> str:
+        categories = tuple(
+            (field.name.title(), getattr(self, field.name)) for field in fields(self)
+        )
+
+        label_width = max(len(name) for name, _ in categories)
+
+        return "\n".join(
+            f"{name:<{label_width}}: {attributes}" for name, attributes in categories
+        )

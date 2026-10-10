@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 
-from .generation import TIERS, generate_base_quality
+from .generation import TIERS, generate_attributes, generate_base_quality
+from .position import Position
+from .ratings import overall_rating
 
 
 def check_base_quality_distribution(n: int = 100_000) -> None:
@@ -28,6 +30,18 @@ def check_base_quality_distribution(n: int = 100_000) -> None:
     plt.show()
 
 
+def check_generated_player_attributes() -> None:
+    for position in list(Position):
+        print(f"\n\n========== POSITION: {position.abbreviation} ==========")
+        for target in [40, 50, 60, 70, 80, 90, 99]:
+            attributes = generate_attributes(position, target)
+            rating = round(overall_rating(attributes, position))
+            print(
+                f"\n========== TARGET RATING: {target} | ACTUAL RATING: {rating} =========="
+            )
+            print(attributes)
+
+
 def main() -> None:
     # ========== CREATE AND EXAMINE HAND-CREATED AND RANDOM PLAYERS ==========
     # p1 = Player(Nationality.UK, 16, Position.ATTACKING_MIDFIELDER)
@@ -53,7 +67,9 @@ def main() -> None:
     # plt.tight_layout()
     # plt.show()
 
-    check_base_quality_distribution()
+    # check_base_quality_distribution()
+
+    check_generated_player_attributes()
 
 
 if __name__ == "__main__":
