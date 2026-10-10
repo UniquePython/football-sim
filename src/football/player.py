@@ -7,6 +7,7 @@ from .attributes import Attributes, BaseAttributes
 from .development import (
     OFFSET_LIMIT,
     generate_development_offset,
+    headroom_for,
     overall_from_potential,
     potential_from_overall,
 )
@@ -144,7 +145,13 @@ class Player:
 
     @property
     def value(self) -> int:
-        return round_value(market_value(self.overall, self.potential, self.age))
+        return round_value(market_value(self.overall, self.growth_headroom, self.age))
+
+    @property
+    def growth_headroom(self) -> int:
+        return headroom_for(
+            self.overall, self.potential, self.age, self._development_offset
+        )
 
     @property
     def potential(self) -> int:

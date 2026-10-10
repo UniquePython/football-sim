@@ -28,7 +28,7 @@ AGE_DECLINE_ANCHORS: tuple[tuple[int, float], ...] = (
     (45, 0.02),
 )
 
-POTENTIAL_WEIGHT = 0.4
+GROWTH_WEIGHT = 0.4
 
 _RATINGS = [rating for rating, _ in VALUE_ANCHORS]
 _LOG_VALUES = [math.log(value) for _, value in VALUE_ANCHORS]
@@ -50,16 +50,16 @@ def base_value(rating: float) -> float:
     return math.exp(_interpolate(_RATINGS, _LOG_VALUES, rating))
 
 
-def effective_rating(overall: int, potential: int) -> float:
-    return overall + POTENTIAL_WEIGHT * (potential - overall)
+def effective_rating(overall: int, growth_headroom: int) -> float:
+    return overall + GROWTH_WEIGHT * growth_headroom
 
 
 def age_decline(age: float) -> float:
     return _interpolate(_DECLINE_AGES, _DECLINE_MULTIPLIERS, age)
 
 
-def market_value(overall: int, potential: int, age: float) -> float:
-    return base_value(effective_rating(overall, potential)) * age_decline(age)
+def market_value(overall: int, growth_headroom: int, age: float) -> float:
+    return base_value(effective_rating(overall, growth_headroom)) * age_decline(age)
 
 
 VALUE_SIGNIFICANT_DIGITS = 2
