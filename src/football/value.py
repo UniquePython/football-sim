@@ -16,16 +16,16 @@ VALUE_ANCHORS: tuple[tuple[int, float], ...] = (
 # (age, multiplier) anchors: the share of value kept once past his prime
 AGE_DECLINE_ANCHORS: tuple[tuple[int, float], ...] = (
     (28, 1.00),
-    (29, 0.92),
-    (30, 0.80),
-    (31, 0.65),
-    (32, 0.50),
-    (33, 0.37),
-    (34, 0.26),
-    (35, 0.17),
-    (36, 0.10),
-    (38, 0.05),
-    (45, 0.02),
+    (29, 0.96),
+    (30, 0.90),
+    (31, 0.80),
+    (32, 0.68),
+    (33, 0.55),
+    (34, 0.44),
+    (35, 0.33),
+    (36, 0.23),
+    (38, 0.10),
+    (45, 0.03),
 )
 
 GROWTH_WEIGHT = 0.4

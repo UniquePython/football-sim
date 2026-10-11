@@ -1,13 +1,18 @@
 import argparse
 from collections.abc import Callable
-from statistics import mean
+from dataclasses import astuple, fields
+from statistics import mean, pstdev
 
+from .aging import AGING_CLASS_OF, AgingClass
+from .attributes import Attributes
+from .development import gap_for
 from .foot import Foot
 from .generation import TIERS, generate_attributes, generate_potential
+from .growth import expected_overall, grow_attributes
 from .nationality import Nationality
 from .player import Player
 from .position import Position
-from .ratings import overall_rating
+from .ratings import PROFILES, overall_rating
 from .value import VALUE_ANCHORS, base_value
 
 # ========== DEMO ==========
@@ -182,6 +187,188 @@ def check_value_calibration(n: int = 200_000) -> None:
         )
 
 
+def _class_skew(attributes: Attributes, position: Position) -> dict[AgingClass, float]:
+    overall = overall_rating(attributes, position)
+    weights = PROFILES[position]
+    gaps: dict[AgingClass, list[float]] = {c: [] for c in AgingClass}
+
+    for group in fields(Attributes):
+        group_weights = getattr(weights, group.name)
+        group_values = getattr(attributes, group.name)
+
+        for attribute in fields(group_weights):
+            if getattr(group_weights, attribute.name) > 0:
+                aging_class = AGING_CLASS_OF[f"{group.name}.{attribute.name}"]
+                gaps[aging_class].append(
+                    getattr(group_values, attribute.name) - overall
+                )
+
+    return {c: mean(v) for c, v in gaps.items() if v}
+
+
+def check_growth(n: int = 2_000) -> None:
+    ages = list(range(Player.MIN_AGE, 28))
+    overalls: dict[int, list[float]] = {age: [] for age in ages}
+    curve: dict[int, list[float]] = {age: [] for age in ages}
+    skews: dict[int, dict[AgingClass, list[float]]] = {
+        age: {c: [] for c in AgingClass} for age in ages
+    }
+
+    for _ in range(n):
+        player = Player(age=Player.MIN_AGE, development_offset=0.0)
+        attributes = player.attributes
+
+        for age in ages:
+            overalls[age].append(overall_rating(attributes, player.position))
+            curve[age].append(player.potential - gap_for(age, player.potential, 0.0))
+            for aging_class, skew in _class_skew(attributes, player.position).items():
+                skews[age][aging_class].append(skew)
+
+            grown = grow_attributes(
+                player.position, attributes, age, player.potential, 0.0
+            )
+            before = [v for group in astuple(attributes) for v in group]
+            after = [v for group in astuple(grown) for v in group]
+            assert all(b >= a for a, b in zip(before, after)), "an attribute decreased"
+            attributes = grown
+
+    print(
+        f"{'age':>3}  {'overall':>7}  {'curve':>7}  {'spread':>6}  "
+        + "  ".join(f"{c.name:>7}" for c in AgingClass)
+    )
+    for age in ages:
+        diffs = [o - c for o, c in zip(overalls[age], curve[age])]
+        cells = "  ".join(
+            f"{mean(skews[age][c]):>7.1f}" if skews[age][c] else f"{'-':>7}"
+            for c in AgingClass
+        )
+        print(
+            f"{age:>3}  {mean(overalls[age]):>7.1f}  {mean(curve[age]):>7.1f}  "
+            f"{pstdev(diffs):>6.2f}  {cells}"
+        )
+
+
+def _record_shape(
+    player: Player,
+    age: int,
+    overalls: dict[int, list[float]],
+    losses: dict[int, list[float]],
+    skews: dict[int, dict[AgingClass, list[float]]],
+) -> None:
+    overalls[age].append(player.overall)
+    losses[age].append(player.potential - player.overall)
+    for aging_class, skew in _class_skew(player.attributes, player.position).items():
+        skews[age][aging_class].append(skew)
+
+
+def _print_shape_table(
+    overalls: dict[int, list[float]],
+    losses: dict[int, list[float]],
+    skews: dict[int, dict[AgingClass, list[float]]],
+) -> None:
+    print(
+        f"{'age':>3}  {'overall':>7}  {'below pot':>9}  "
+        + "  ".join(f"{c.name:>7}" for c in AgingClass)
+    )
+    for age in overalls:  # noqa: PLC0206
+        cells = "  ".join(
+            f"{mean(skews[age][c]):>7.1f}" if skews[age][c] else f"{'-':>7}"
+            for c in AgingClass
+        )
+        print(
+            f"{age:>3}  {mean(overalls[age]):>7.1f}  {mean(losses[age]):>9.1f}  {cells}"
+        )
+
+
+def check_generated_shape(n: int = 1_000) -> None:
+    ages = list(range(Player.MIN_AGE, 41))
+    overalls = {age: [] for age in ages}
+    losses = {age: [] for age in ages}
+    skews = {age: {c: [] for c in AgingClass} for age in ages}
+
+    for age in ages:
+        for _ in range(n):
+            player = Player(age=age, development_offset=0.0)
+            _record_shape(player, age, overalls, losses, skews)
+
+    _print_shape_table(overalls, losses, skews)
+
+
+def check_career(n: int = 1_000) -> None:
+    ages = list(range(Player.MIN_AGE, 41))
+    overalls = {age: [] for age in ages}
+    losses = {age: [] for age in ages}
+    skews = {age: {c: [] for c in AgingClass} for age in ages}
+
+    for _ in range(n):
+        player = Player(age=Player.MIN_AGE, development_offset=0.0)
+        for age in ages:
+            _record_shape(player, age, overalls, losses, skews)
+            if age != ages[-1]:
+                player.advance_year()
+
+    _print_shape_table(overalls, losses, skews)
+
+
+def _empty_shape(
+    ages: list[int],
+) -> tuple[
+    dict[int, list[float]],
+    dict[int, list[float]],
+    dict[int, dict[AgingClass, list[float]]],
+]:
+    return (
+        {age: [] for age in ages},
+        {age: [] for age in ages},
+        {age: {c: [] for c in AgingClass} for age in ages},
+    )
+
+
+def check_offsets(n: int = 1_000) -> None:
+    ages = list(range(Player.MIN_AGE, 41))
+
+    for offset in (-3.0, 0.0, 3.0):
+        career = _empty_shape(ages)
+        generated = _empty_shape(ages)
+        model: dict[int, list[float]] = {age: [] for age in ages}
+
+        for _ in range(n):
+            player = Player(age=Player.MIN_AGE, development_offset=offset)
+            for age in ages:
+                _record_shape(player, age, *career)
+                model[age].append(
+                    player.potential
+                    - expected_overall(player.position, age, player.potential, offset)
+                )
+                if age != ages[-1]:
+                    player.advance_year()
+
+        for age in ages:
+            for _ in range(n):
+                _record_shape(
+                    Player(age=age, development_offset=offset), age, *generated
+                )
+
+        _, career_loss, career_skew = career
+        _, generated_loss, generated_skew = generated
+
+        print(f"\noffset {offset:+.1f}")
+        print("bp = below potential, F = FAST skew, M = MENTAL skew")
+        print(
+            f"{'age':>3}  {'bp_car':>7}  {'bp_gen':>7}  {'bp_mod':>7}  "
+            f"{'F_car':>7}  {'F_gen':>7}  {'M_car':>7}  {'M_gen':>7}"
+        )
+        for age in ages:
+            print(
+                f"{age:>3}  {mean(career_loss[age]):>7.1f}  "
+                f"{mean(generated_loss[age]):>7.1f}  {mean(model[age]):>7.1f}  "
+                f"{mean(career_skew[age][AgingClass.FAST]):>7.1f}  "
+                f"{mean(generated_skew[age][AgingClass.FAST]):>7.1f}  "
+                f"{mean(career_skew[age][AgingClass.MENTAL]):>7.1f}  "
+                f"{mean(generated_skew[age][AgingClass.MENTAL]):>7.1f}"
+            )
+
+
 CHECKS: dict[str, Callable[[], None]] = {
     "age": check_age_distribution,
     "base-quality": check_base_quality_distribution,
@@ -189,6 +376,10 @@ CHECKS: dict[str, Callable[[], None]] = {
     "attributes": check_generated_player_attributes,
     "value-curve": check_base_value_curve,
     "value-calibration": check_value_calibration,
+    "growth": check_growth,
+    "generated-shape": check_generated_shape,
+    "career": check_career,
+    "offsets": check_offsets,
 }
 
 

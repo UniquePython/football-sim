@@ -8,8 +8,6 @@ from .development import (
     OFFSET_LIMIT,
     generate_development_offset,
     headroom_for,
-    overall_from_potential,
-    potential_from_overall,
 )
 from .faker import fakers
 from .foot import MAX_WEAK_FOOT, MIN_WEAK_FOOT, Foot
@@ -18,6 +16,13 @@ from .generation import (
     generate_attributes,
     generate_potential,
     generate_weak_foot,
+)
+from .growth import (
+    class_levels,
+    decline_attributes,
+    expected_overall,
+    grow_attributes,
+    potential_from_current,
 )
 from .nationality import Nationality
 from .position import Position
@@ -98,19 +103,19 @@ class Player:
             )
             self._potential = self._potential_from_current_overall()
         elif overall is not None:
-            self.attributes = generate_attributes(
-                self.position, self._require_rating(overall, "overall")
+            overall = self._require_rating(overall, "overall")
+            self._potential = potential_from_current(
+                self.position, self.age, overall, self._development_offset
             )
-            self._potential = self._potential_from_current_overall()
+            self.attributes = self._generate_attributes(overall)
         else:
             self._potential = self._require_rating(
                 value_or_default(potential, generate_potential), "potential"
             )
-            self.attributes = generate_attributes(
-                self.position,
-                overall_from_potential(
-                    self.age, self._potential, self._development_offset
-                ),
+            self.attributes = self._generate_attributes(
+                expected_overall(
+                    self.position, self.age, self._potential, self._development_offset
+                )
             )
 
         self.weak_foot = value_or_default(
@@ -129,8 +134,33 @@ class Player:
             f"Player {name} must be between {cls.MIN_OVERALL} and {cls.MAX_OVERALL}",
         )
 
+    def _generate_attributes(self, target: int) -> Attributes:
+        return generate_attributes(
+            self.position,
+            target,
+            class_levels(
+                self.position, self.age, self._potential, self._development_offset
+            ),
+        )
+
     def _potential_from_current_overall(self) -> int:
-        return potential_from_overall(self.age, self.overall, self._development_offset)
+        return potential_from_current(
+            self.position, self.age, self.overall, self._development_offset
+        )
+
+    def advance_year(self) -> None:
+        if self.age >= self.MAX_AGE:
+            raise ValueError(f"Player cannot be older than {self.MAX_AGE}")
+
+        grown = grow_attributes(
+            self.position,
+            self.attributes,
+            self.age,
+            self._potential,
+            self._development_offset,
+        )
+        self.attributes = decline_attributes(self.position, grown, self.age)
+        self.age += 1
 
     @classmethod
     def _generate_age(cls) -> int:

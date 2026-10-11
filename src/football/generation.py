@@ -3,6 +3,7 @@ from dataclasses import dataclass, fields
 from enum import StrEnum
 from math import sqrt
 
+from .aging import AGING_CLASS_OF, AgingClass
 from .attributes import Attributes, BaseAttributes, GoalKeepingAttributes
 from .foot import MAX_WEAK_FOOT, MIN_WEAK_FOOT
 from .position import Position, PositionGroup
@@ -115,7 +116,11 @@ class _Slot:
     floor: int
 
 
-def generate_attributes(position: Position, target: int) -> Attributes:
+def generate_attributes(
+    position: Position,
+    target: int,
+    levels: dict[AgingClass, float] | None = None,
+) -> Attributes:
     require_type(target, int, "Target overall must be of type int")
     require_condition(
         target,
@@ -137,14 +142,19 @@ def generate_attributes(position: Position, target: int) -> Attributes:
 
         for attribute in fields(group_weights):
             weight = getattr(group_weights, attribute.name)
+            level = (
+                target
+                if levels is None
+                else levels[AGING_CLASS_OF[f"{group.name}.{attribute.name}"]]
+            )
 
             if weight > 0:
-                baseline, scale, floor = target, 1.0, BaseAttributes.MIN
+                baseline, scale, floor = level, 1.0, BaseAttributes.MIN
             elif group.type is GoalKeepingAttributes and not is_goalkeeper:
-                baseline = max(OUTFIELD_GK_FRACTION * target, OUTFIELD_GK_FLOOR)
+                baseline = max(OUTFIELD_GK_FRACTION * level, OUTFIELD_GK_FLOOR)
                 scale, floor = OUTFIELD_GK_NOISE_SCALE, OUTFIELD_GK_FLOOR
             else:
-                baseline = max(OFF_ROLE_FRACTION * target, OFF_ROLE_FLOOR)
+                baseline = max(OFF_ROLE_FRACTION * level, OFF_ROLE_FLOOR)
                 scale, floor = OFF_ROLE_NOISE_SCALE, OFF_ROLE_FLOOR
 
             value = baseline + scale * (shared + random.gauss(0, individual_sigma))
