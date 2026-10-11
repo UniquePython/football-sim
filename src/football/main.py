@@ -6,9 +6,12 @@ from statistics import mean, pstdev
 from .aging import AGING_CLASS_OF, AgingClass
 from .attributes import Attributes
 from .development import gap_for
+from .fit import OUT_OF_POSITION_PENALTY, POSITION_DISTANCE, slot_rating
 from .foot import Foot
+from .formation import Formation
 from .generation import TIERS, generate_attributes, generate_potential
 from .growth import expected_overall, grow_attributes
+from .lineup import best_lineup
 from .nationality import Nationality
 from .player import Player
 from .position import Position
@@ -369,6 +372,78 @@ def check_offsets(n: int = 1_000) -> None:
             )
 
 
+def check_slot_fit(n: int = 300) -> None:
+    positions = list(Position)
+    header = f"{'':>4} | " + " ".join(f"{p.abbreviation:>5}" for p in positions)
+
+    print("Profile distance (0 = same profile, 1 = no overlap)")
+    print("rows = natural position, columns = slot")
+    print(header)
+    for natural in positions:
+        cells = " ".join(
+            f"{POSITION_DISTANCE[natural, slot]:>5.2f}" for slot in positions
+        )
+        print(f"{natural.abbreviation:>4} | {cells}")
+
+    print(
+        f"\nMean slot rating of overall-70 players (penalty {OUT_OF_POSITION_PENALTY})"
+    )
+    print(header)
+    for natural in positions:
+        players = [Player(position=natural, overall=70, age=27) for _ in range(n)]
+        cells = " ".join(
+            f"{mean(slot_rating(p, slot) for p in players):>5.1f}" for slot in positions
+        )
+        print(f"{natural.abbreviation:>4} | {cells}")
+
+
+def check_lineup() -> None:
+    # Placeholder squad shape: club generation will eventually own this.
+    shape = {
+        Position.GOALKEEPER: 3,
+        Position.CENTRE_BACK: 4,
+        Position.LEFT_BACK: 2,
+        Position.RIGHT_BACK: 2,
+        Position.DEFENSIVE_MIDFIELDER: 2,
+        Position.CENTRAL_MIDFIELDER: 3,
+        Position.ATTACKING_MIDFIELDER: 2,
+        Position.LEFT_WINGER: 2,
+        Position.RIGHT_WINGER: 2,
+        Position.STRIKER: 3,
+    }
+    squad = [Player(position=p) for p, count in shape.items() for _ in range(count)]
+
+    lineups = sorted(
+        (best_lineup(formation, squad) for formation in Formation),
+        key=lambda lineup: lineup.strength,
+        reverse=True,
+    )
+
+    print(f"Squad of {len(squad)}: formations ranked by lineup strength\n")
+    print(
+        f"  {'formation':<10} {'overall':>7} {'def':>5} {'mid':>5} {'att':>5} {'gk':>5}"
+    )
+    for lineup in lineups:
+        print(
+            f"  {lineup.formation.label:<10} {lineup.strength:>7.1f} "
+            f"{lineup.defence_strength:>5.1f} {lineup.midfield_strength:>5.1f} "
+            f"{lineup.attack_strength:>5.1f} {lineup.goalkeeper_strength:>5.1f}"
+        )
+
+    best = lineups[0]
+    print(f"\nBest: {best.formation.label} (strength {best.strength:.1f})")
+    print(f"  {'slot':<4} {'player':<24} {'natural':<7} {'ovr':>3} {'in slot':>7}")
+    for slot, player, rating in best.assignments:
+        print(
+            f"  {slot.abbreviation:<4} {player.name:<24} "
+            f"{player.position.abbreviation:<7} {player.overall:>3} {rating:>7.1f}"
+        )
+
+    print(
+        f"\nReserves: {', '.join(f'{p.position.abbreviation} {p.overall}' for p in best.reserves)}"
+    )
+
+
 CHECKS: dict[str, Callable[[], None]] = {
     "age": check_age_distribution,
     "base-quality": check_base_quality_distribution,
@@ -380,6 +455,8 @@ CHECKS: dict[str, Callable[[], None]] = {
     "generated-shape": check_generated_shape,
     "career": check_career,
     "offsets": check_offsets,
+    "slot-fit": check_slot_fit,
+    "lineup": check_lineup,
 }
 
 
