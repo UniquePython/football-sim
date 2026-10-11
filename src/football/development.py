@@ -31,20 +31,6 @@ def gap_for(age: float, potential: int, offset: float) -> float:
     return min(curve_gap(age - offset), headroom_cap)
 
 
-def overall_from_potential(age: float, potential: int, offset: float) -> int:
-    return round(potential - gap_for(age, potential, offset))
-
-
-def potential_from_overall(age: float, overall: int, offset: float) -> int:
-    headroom_cap = (
-        GAP_HEADROOM_FRACTION
-        * max(0, overall - OVERALL_FLOOR)
-        / (1 - GAP_HEADROOM_FRACTION)
-    )
-    gap = min(curve_gap(age - offset), headroom_cap)
-    return min(OVERALL_CEILING, round(overall + gap))
-
-
 def headroom_for(overall: int, potential: int, age: float, offset: float) -> int:
     if age - offset >= PEAK_AGE:
         return 0
